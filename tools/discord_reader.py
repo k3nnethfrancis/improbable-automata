@@ -44,27 +44,46 @@ class DiscordContentReader:
         
         try:
             print("- Setting up on_ready event")
+            ready_event = asyncio.Event()
+            
             @self.client.event
             async def on_ready():
-                print("- Bot is ready")
-                channel = self.client.get_channel(channel_id)
-                if not channel:
-                    print(f"Error: Could not access channel {channel_id}")
-                    return
+                try:
+                    print("- Bot is ready")
+                    channel = self.client.get_channel(channel_id)
+                    if not channel:
+                        print(f"Error: Could not access channel {channel_id}")
+                        return
 
-                print("- Starting message fetch")
-                async for message in channel.history(
-                    limit=limit,
-                    after=start_date,
-                    oldest_first=True
-                ):
-                    message_data = self._process_message(message)
-                    messages.append(message_data)
-                    if len(messages) % 10 == 0:  # Log progress every 10 messages
-                        print(f"- Fetched {len(messages)} messages so far")
-        
+                    print(f"- Found channel: {channel.name}")
+                    print("- Starting message fetch")
+                    
+                    async for message in channel.history(
+                        limit=limit,
+                        after=start_date,
+                        oldest_first=True
+                    ):
+                        message_data = self._process_message(message)
+                        messages.append(message_data)
+                        if len(messages) % 10 == 0:
+                            print(f"- Fetched {len(messages)} messages so far")
+                    
+                    print("- Message fetch complete")
+                except Exception as e:
+                    print(f"Error in on_ready: {str(e)}")
+                    raise
+                finally:
+                    ready_event.set()
+                    await self.client.close()  # Close client after fetching
+            
             print("- Starting Discord client")
-            await self.client.start(self.token)
+            try:
+                await self.client.start(self.token)
+            except Exception as e:
+                print(f"Error starting client: {str(e)}")
+                raise
+            finally:
+                await ready_event.wait()  # Wait for event before proceeding
             
         except Exception as e:
             print(f"Error in get_channel_content: {str(e)}")
@@ -167,6 +186,8 @@ if __name__ == "__main__":
     TOKEN = os.getenv('DISCORD_BOT_TOKEN')
     CHANNEL_ID = int(os.getenv('DISCORD_CHANNEL_ID'))
     
+    print(f"Using Channel ID: {CHANNEL_ID}")
+    
     async def main():
         print("\n=== Discord Content Reader Demo ===")
         print("Initializing...")
@@ -190,6 +211,8 @@ if __name__ == "__main__":
             if messages:
                 print("\nMost recent message:")
                 print(messages[-1])
+            else:
+                print("\nNo messages found in the last 7 days")
             
         except Exception as e:
             print(f"\nError occurred: {str(e)}")
@@ -198,28 +221,16 @@ if __name__ == "__main__":
             print(f"Traceback: {traceback.format_exc()}")
             raise
         finally:
-            print("\nStarting cleanup...")
-            try:
-                # Ensure client is properly closed
-                if hasattr(reader, 'client') and not reader.client.is_closed():
-                    print("- Closing Discord client")
-                    await reader.client.close()
-                
-                print("- Canceling remaining tasks")
-                for task in asyncio.all_tasks():
-                    if not task.done():
-                        task.cancel()
-                
-                print("- Waiting for tasks to complete")
-                await asyncio.sleep(0.1)
-            except Exception as cleanup_error:
-                print(f"Cleanup error: {cleanup_error}")
-            print("Cleanup complete")
+            # Simplified cleanup
+            if hasattr(reader, 'client') and not reader.client.is_closed():
+                await reader.client.close()
     
     try:
         print("\nStarting main loop...")
         asyncio.run(main())
     except KeyboardInterrupt:
         print("\nShutting down gracefully...")
+    except Exception as e:
+        print(f"\nError occurred: {str(e)}")
     finally:
         print("Program terminated")
