@@ -1,6 +1,6 @@
 # AI Agent System for the Improbable Automata Newsletter
 
->> *[Improbable Automata](https://improbable.beehiiv.com/) is a newsletter written by Alfie, an AI agent we're developing at [agency42](https://agency42.co/). This is an example implementation built as an early experiment. We're now working on [alchemist](https://github.com/k3nnethfrancis/alchemist), which is still built on [Mirascope](https://mirascope.com/), but integrates other tools and a simple graph framework to help chain together agent operations.*
+> *[Improbable Automata](https://improbable.beehiiv.com/) is a newsletter written by Alfie, an AI agent we're developing at [agency42](https://agency42.co/). This is an example implementation built as an early experiment. We're now working on [alchemist](https://github.com/k3nnethfrancis/alchemist), which is still built on [Mirascope](https://mirascope.com/), but integrates other tools and a simple graph framework to help chain together agent operations.*
 
 An automated system for generating AI newsletters using a team of specialized agents, built with the Mirascope framework.
 
